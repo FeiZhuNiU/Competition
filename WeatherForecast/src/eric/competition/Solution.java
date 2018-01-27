@@ -20,6 +20,15 @@ public class Solution {
     private int day;
     private boolean hasFlied = false;
     private PositionReader positionReader;
+    private ForecastReader forecastReader;
+
+    public ForecastReader getForecastReader() {
+        return forecastReader;
+    }
+
+    public void setForecastReader(ForecastReader forecastReader) {
+        this.forecastReader = forecastReader;
+    }
 
     public boolean isHasFlied() {
         return hasFlied;
@@ -50,11 +59,7 @@ public class Solution {
             ForecastReader forecastReader,
             int maxStepEachSlice,
             PositionReader positionReader) {
-//        if (isBlockedInForecast.length == 0
-//                || isBlockedInForecast[0].length == 0
-//                || isBlockedInForecast[0][0].length == 0) {
-//            return;
-//        }
+
         this.startCol = positionReader.getStartPosition().getCol();
         this.startRow = positionReader.getStartPosition().getRow();
         this.isBlockedInForecast = forecastReader.getForecast();
@@ -66,6 +71,7 @@ public class Solution {
         this.targets = new ArrayList<>(positionReader.getEndPositionMap().keySet());
         this.results = new HashMap<>();
         this.positionReader = positionReader;
+        this.forecastReader = forecastReader;
         this.dpMatrix = new boolean[maxStepEachSlice * sliceNum + 1][rowNum][colNum];
 
     }
@@ -234,14 +240,14 @@ public class Solution {
             for (int i = 0; i < isBlockedInForecast[0].length; ++i) {
                 for (int j = 0; j < isBlockedInForecast[0][0].length; ++j) {
                     if (isBlockedInForecast[n][i][j]) {
-                        for (int l = -2; l < 3; ++l) {
-                            for (int m = -2; m < 3; ++m) {
+                        for (int l = -1; l <= 1; ++l) {
+                            for (int m = -1; m <= 1; ++m) {
                                 if (i + l >= 0
                                         && i + l < isBlockedInForecast[0].length
-                                        && j + m >=0
+                                        && j + m >= 0
                                         && j + m < isBlockedInForecast[0][0].length
-                                        ){
-                                    temp[n][i+l][j+m] = true;
+                                        ) {
+                                    temp[n][i + l][j + m] = true;
                                 }
                             }
                         }
@@ -262,27 +268,56 @@ public class Solution {
             int last_row = last.getRow();
             int last_col = last.getCol();
             int curRow = -1, curCol = -1;
+            Position bestPosition = null;
             if (dpMatrix[n][last_row][last_col]) {
                 path.add(new Position(last_row, last_col));
             } else {
+                float bestScore = -1;
                 if (last_row > 0 && dpMatrix[n][last_row - 1][last_col]) {
-                    path.add(new Position(curRow = last_row - 1, curCol = last_col));
-                } else if (last_row < rowNum - 1 && dpMatrix[n][last_row + 1][last_col]) {
-                    path.add(new Position(curRow = last_row + 1, curCol = last_col));
-                } else if (last_col > 0 && dpMatrix[n][last_row][last_col - 1]) {
-                    path.add(new Position(curRow = last_row, curCol = last_col - 1));
-                } else if (last_row < colNum - 1 && dpMatrix[n][last_row][last_col + 1]) {
-                    path.add(new Position(curRow = last_row, curCol = last_col + 1));
+                    float upScore = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row - 1][last_col];
+                    if (upScore > bestScore) {
+                        bestScore = upScore;
+                        bestPosition = new Position(last_row - 1, last_col);
+                    }
+                }
+
+                if (last_row < rowNum - 1 && dpMatrix[n][last_row + 1][last_col]) {
+                    float downScore = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row + 1][last_col];
+                    if (downScore > bestScore) {
+                        bestScore = downScore;
+                        bestPosition = new Position(last_row + 1, last_col);
+                    }
+                }
+
+                if (last_col > 0 && dpMatrix[n][last_row][last_col - 1]) {
+                    float leftScore = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row][last_col - 1];
+                    if (leftScore > bestScore) {
+                        bestScore = leftScore;
+                        bestPosition = new Position(last_row, last_col - 1);
+                    }
+                }
+
+                if (last_row < colNum - 1 && dpMatrix[n][last_row][last_col + 1]) {
+                    float rightScore = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row][last_col + 1];
+                    if (rightScore > bestScore) {
+                        bestScore = rightScore;
+                        bestPosition = new Position(last_row, last_col + 1);
+                    }
+                }
+                if (bestPosition != null) {
+                    path.add(bestPosition);
                 } else {
                     System.out.println("Something wrong during find path");
+                    break;
                 }
             }
-            if (curRow == startRow && curCol == startCol) {
+            if (bestPosition != null && bestPosition.getRow() == startRow && bestPosition.getCol() == startCol) {
                 firstN = n;
                 break;
             }
+
         }
-//        ret.add(new Position(startRow, startCol));
+
         if (firstN == -1) {
             System.out.println("Something wrong during find the origin position");
         }

@@ -10,6 +10,7 @@ public class ForecastReader {
     private int rowNum;
     private int colNum;
     private int day;
+    private float forecastScore[][][];
 
     public final static int totalHours = 18;
 
@@ -17,7 +18,16 @@ public class ForecastReader {
         this.rowNum = row;
         this.colNum = col;
         forecast = new boolean[totalHours][rowNum][colNum];
+        forecastScore = new float[totalHours][rowNum][colNum];
         readData(fileName);
+    }
+
+    public float[][][] getForecastScore() {
+        return forecastScore;
+    }
+
+    public void setForecastScore(float[][][] forecastScore) {
+        this.forecastScore = forecastScore;
     }
 
     private void readData(String fileName) {
@@ -30,6 +40,7 @@ public class ForecastReader {
             while ((line = file.readLine()) != null) {
                 SingleLineData lineData = new SingleLineData(line);
                 forecast[lineData.getHour() - 3][lineData.getX() - 1][lineData.getY() - 1] = lineData.isBlocked();
+                forecastScore[lineData.getHour() - 3][lineData.getX() - 1][lineData.getY() - 1] = lineData.getScore();
                 this.day = lineData.getDay();
             }
             file.close();
@@ -78,6 +89,7 @@ public class ForecastReader {
         int day;
         int hour;
         boolean blocked;
+        float score;
 
         public SingleLineData(String line) {
             String[] datas = line.split(",");
@@ -86,6 +98,15 @@ public class ForecastReader {
             day = Integer.parseInt(datas[2]);
             hour = Integer.parseInt(datas[3]);
             blocked = (Integer.parseInt(datas[4]) == 1);
+            score = Float.parseFloat(datas[5]);
+        }
+
+        public float getScore() {
+            return score;
+        }
+
+        public void setScore(float score) {
+            this.score = score;
         }
 
         public int getX() {
