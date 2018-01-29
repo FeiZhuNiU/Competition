@@ -267,7 +267,6 @@ public class Solution {
             Position last = path.get(path.size() - 1);
             int last_row = last.getRow();
             int last_col = last.getCol();
-            int curRow = -1, curCol = -1;
             Position bestPosition = null;
             if (dpMatrix[n][last_row][last_col]) {
                 path.add(new Position(last_row, last_col));
