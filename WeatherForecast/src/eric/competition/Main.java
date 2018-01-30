@@ -27,15 +27,19 @@ public class Main {
 
         for (int i = 1; i <= 5; ++i) {
             System.out.println("Reading predict Data " + i);
-            ForecastReader forecastReader = new ForecastReader("resources\\" + data + "\\" + i + ".csv", 548, 421);
+
+            ForecastReader forecastReader = new ForecastReader("resources\\20180128\\" + i + ".csv", 548, 421);
+
             long time3 = System.currentTimeMillis();
             System.out.println("consumed " + (time3 - time2) / 1000.0 + "s");
             Solution solution = new Solution(
                     forecastReader,
                     30,
                     positionReader);
+
             solution.solveProblem2();
             solution.printResult("resources\\result" + data + "b.csv", positionReader);
+
             long time4 = System.currentTimeMillis();
             System.out.println("consumed " + (time4 - time3) / 1000.0 + "s");
         }
