@@ -176,7 +176,7 @@ public class Solution {
         preProcess(0);
         this.dpMatrix2 = new int[maxStepEachSlice * hourNum + 1][rowNum][colNum];
         int maxStep = maxStepEachSlice * hourNum;
-        for(int n = 0; n <= maxStep ; ++n) {
+        for (int n = 0; n <= maxStep; ++n) {
             for (int i = 0; i < rowNum; ++i) {
                 for (int j = 0; j < colNum; ++j) {
                     dpMatrix2[n][i][j] = Integer.MAX_VALUE;
@@ -197,7 +197,7 @@ public class Solution {
                             int right = ((j == colNum - 1) ? Integer.MAX_VALUE : dpMatrix2[n - 1][i][j + 1]);
                             int left = ((j == 0) ? Integer.MAX_VALUE : dpMatrix2[n - 1][i][j - 1]);
                             int center = dpMatrix2[n - 1][i][j];
-                            Integer min = Math.min(up, Math.min(down, Math.min(right, Math.min(left, center))));
+                            Integer min = Collections.min(Arrays.asList(up, down, right, left, center));
                             dpMatrix2[n][i][j] = (min == Integer.MAX_VALUE) ? Integer.MAX_VALUE : min + 1;
                         }
                     }
@@ -370,7 +370,7 @@ public class Solution {
             }
         }
         Collections.reverse(path);
-        if(path.get(0).getRow()!=startRow || path.get(0).getCol()!= startCol){
+        if (path.get(0).getRow() != startRow || path.get(0).getCol() != startCol) {
             System.out.println("Something wrong when find path");
         }
         return new Pair<>(path, lastN - steps + 1);
