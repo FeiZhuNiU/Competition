@@ -12,7 +12,7 @@ public class Solution {
 
     private int rowNum;
     private int colNum;
-    private int sliceNum;
+    private int hourNum;
     private int maxStepEachSlice;
     private int startCol;
     private int startRow;
@@ -51,6 +51,8 @@ public class Solution {
     // can be optimized to 2 dimensions
     private boolean[][][] dpMatrix;
 
+    private int[][][] dpMatrix2;
+
     //Integer: firstN
     private Map<Position, Pair<List<Position>, Integer>> results;
 
@@ -63,7 +65,7 @@ public class Solution {
         this.startCol = positionReader.getStartPosition().getCol();
         this.startRow = positionReader.getStartPosition().getRow();
         this.isBlockedInForecast = forecastReader.getForecast();
-        this.sliceNum = isBlockedInForecast.length;
+        this.hourNum = isBlockedInForecast.length;
         this.rowNum = isBlockedInForecast[0].length;
         this.colNum = isBlockedInForecast[0][0].length;
         this.maxStepEachSlice = maxStepEachSlice;
@@ -72,7 +74,7 @@ public class Solution {
         this.results = new HashMap<>();
         this.positionReader = positionReader;
         this.forecastReader = forecastReader;
-        this.dpMatrix = new boolean[maxStepEachSlice * sliceNum + 1][rowNum][colNum];
+
 
     }
 
@@ -132,12 +134,12 @@ public class Solution {
         this.colNum = colNum;
     }
 
-    public int getSliceNum() {
-        return sliceNum;
+    public int getHourNum() {
+        return hourNum;
     }
 
-    public void setSliceNum(int sliceNum) {
-        this.sliceNum = sliceNum;
+    public void setHourNum(int hourNum) {
+        this.hourNum = hourNum;
     }
 
     public boolean[][][] getIsBlockedInForecast() {
@@ -164,15 +166,76 @@ public class Solution {
         this.results = results;
     }
 
-    private void solveProblem() {
+    public void solveProblem2() {
         if (startCol < 0
                 || startRow < 0
                 || startCol > colNum
                 || startRow > rowNum) {
             return;
         }
-        preProcess();
-        int maxStep = maxStepEachSlice * sliceNum;
+        preProcess(0);
+        this.dpMatrix2 = new int[maxStepEachSlice * hourNum + 1][rowNum][colNum];
+        int maxStep = maxStepEachSlice * hourNum;
+        for(int n = 0; n <= maxStep ; ++n) {
+            for (int i = 0; i < rowNum; ++i) {
+                for (int j = 0; j < colNum; ++j) {
+                    dpMatrix2[n][i][j] = Integer.MAX_VALUE;
+                }
+            }
+        }
+
+        for (int n = 1; n <= maxStep; ++n) {
+            for (int i = 0; i < rowNum; ++i) {
+                for (int j = 0; j < colNum; ++j) {
+
+                    if (!isBlockedInForecast[(n - 1) / maxStepEachSlice][i][j]) {
+                        if (i == startRow && j == startCol) {
+                            dpMatrix2[n][i][j] = 1;
+                        } else {
+                            int up = ((i == 0) ? Integer.MAX_VALUE : dpMatrix2[n - 1][i - 1][j]);
+                            int down = ((i == rowNum - 1) ? Integer.MAX_VALUE : dpMatrix2[n - 1][i + 1][j]);
+                            int right = ((j == colNum - 1) ? Integer.MAX_VALUE : dpMatrix2[n - 1][i][j + 1]);
+                            int left = ((j == 0) ? Integer.MAX_VALUE : dpMatrix2[n - 1][i][j - 1]);
+                            int center = dpMatrix2[n - 1][i][j];
+                            Integer min = Math.min(up, Math.min(down, Math.min(right, Math.min(left, center))));
+                            dpMatrix2[n][i][j] = (min == Integer.MAX_VALUE) ? Integer.MAX_VALUE : min + 1;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        for (Position position : targets) {
+            int minStep = Integer.MAX_VALUE;
+            int lastN = Integer.MAX_VALUE;
+            for (int timePoint = maxStep; timePoint > 0; --timePoint) {
+                int stepUsed = dpMatrix2[timePoint][position.getRow()][position.getCol()];
+                if (stepUsed != Integer.MAX_VALUE) {
+                    minStep = Math.min(minStep, stepUsed);
+                    if (minStep == stepUsed) {
+                        lastN = timePoint;
+                    }
+                }
+            }
+            if (minStep != Integer.MAX_VALUE && lastN != Integer.MAX_VALUE) {
+                System.out.println(positionReader.getEndPositionMap().get(position) + " has found path");
+                Pair<List<Position>, Integer> pathResult = getPath2(position.getRow(), position.getCol(), lastN, minStep);
+                results.put(position, pathResult);
+            }
+        }
+    }
+
+    public void solveProblem() {
+        if (startCol < 0
+                || startRow < 0
+                || startCol > colNum
+                || startRow > rowNum) {
+            return;
+        }
+        preProcess(0);
+        this.dpMatrix = new boolean[maxStepEachSlice * hourNum + 1][rowNum][colNum];
+        int maxStep = maxStepEachSlice * hourNum;
         for (int i = 0; i < rowNum; ++i) {
             for (int j = 0; j < colNum; ++j) {
                 dpMatrix[0][i][j] = false;
@@ -227,7 +290,7 @@ public class Solution {
         }
     }
 
-    private void preProcess() {
+    private void preProcess(int region) {
         boolean[][][] temp = new boolean[isBlockedInForecast.length][isBlockedInForecast[0].length][isBlockedInForecast[0][0].length];
         for (int n = 0; n < isBlockedInForecast.length; ++n) {
             for (int i = 0; i < isBlockedInForecast[0].length; ++i) {
@@ -240,8 +303,8 @@ public class Solution {
             for (int i = 0; i < isBlockedInForecast[0].length; ++i) {
                 for (int j = 0; j < isBlockedInForecast[0][0].length; ++j) {
                     if (isBlockedInForecast[n][i][j]) {
-                        for (int l = -1; l <= 1; ++l) {
-                            for (int m = -1; m <= 1; ++m) {
+                        for (int l = -region; l <= region; ++l) {
+                            for (int m = -region; m <= region; ++m) {
                                 if (i + l >= 0
                                         && i + l < isBlockedInForecast[0].length
                                         && j + m >= 0
@@ -257,6 +320,62 @@ public class Solution {
         }
         isBlockedInForecast = temp;
     }
+
+
+    private Pair<List<Position>, Integer> getPath2(int targetRow, int targetCol, int lastN, int steps) {
+        List<Position> path = new LinkedList<>();
+        path.add(new Position(targetRow, targetCol));
+        for (int n = lastN - 1; n > lastN - steps; --n) {
+            Position last = path.get(path.size() - 1);
+            int last_row = last.getRow();
+            int last_col = last.getCol();
+            Position bestPosition = null;
+            float curScore = 0;
+            if (dpMatrix2[n][last_row][last_col] == steps - (lastN - n)) {
+                float score = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row][last_col];
+                if (score > curScore) {
+                    curScore = score;
+                    bestPosition = new Position(last_row, last_col);
+                }
+            } else if (last_row > 0 && dpMatrix2[n][last_row - 1][last_col] == steps - (lastN - n)) {
+                float score = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row - 1][last_col];
+                if (score > curScore) {
+                    curScore = score;
+                    bestPosition = new Position(last_row - 1, last_col);
+                }
+            } else if (last_row < rowNum - 1 && dpMatrix2[n][last_row + 1][last_col] == steps - (lastN - n)) {
+                float score = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row + 1][last_col];
+                if (score > curScore) {
+                    curScore = score;
+                    bestPosition = new Position(last_row + 1, last_col);
+                }
+            } else if (last_col > 0 && dpMatrix2[n][last_row][last_col - 1] == steps - (lastN - n)) {
+                float score = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row][last_col - 1];
+                if (score > curScore) {
+                    curScore = score;
+                    bestPosition = new Position(last_row, last_col - 1);
+                }
+            } else if (last_col < colNum - 1 && dpMatrix2[n][last_row][last_col + 1] == steps - (lastN - n)) {
+                float score = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row][last_col + 1];
+                if (score > curScore) {
+                    curScore = score;
+                    bestPosition = new Position(last_row, last_col + 1);
+                }
+            }
+            if (bestPosition != null) {
+                path.add(bestPosition);
+            } else {
+                System.out.println("Something wrong when find path");
+                break;
+            }
+        }
+        Collections.reverse(path);
+        if(path.get(0).getRow()!=startRow || path.get(0).getCol()!= startCol){
+            System.out.println("Something wrong when find path");
+        }
+        return new Pair<>(path, lastN - steps + 1);
+    }
+
 
     private Pair<List<Position>, Integer> getPath(int targetRow, int targetCol, int lastN) {
 
@@ -324,8 +443,7 @@ public class Solution {
         return new Pair<>(path, firstN);
     }
 
-    public void getSolution(String fileName, PositionReader positionReader) {
-        solveProblem();
+    public void printResult(String fileName, PositionReader positionReader) {
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true));
             Set<Map.Entry<Position, Pair<List<Position>, Integer>>> entrySet = results.entrySet();
