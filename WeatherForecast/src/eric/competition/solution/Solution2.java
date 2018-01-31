@@ -28,7 +28,7 @@ public class Solution2 extends Solution {
                 || startRow > rowNum) {
             return;
         }
-        preProcess(0);
+        preProcess(2);
         this.dpMatrix2 = new int[maxStepEachSlice * hourNum + 1][rowNum][colNum];
         int maxStep = maxStepEachSlice * hourNum;
         for (int n = 0; n <= maxStep; ++n) {

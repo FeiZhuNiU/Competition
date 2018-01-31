@@ -1,6 +1,6 @@
 package eric.competition;
 
-import eric.competition.solution.Solution;
+import eric.competition.solution.*;
 
 public class Main {
 
@@ -20,7 +20,7 @@ public class Main {
 //        };
 //        List<Solution.Position> targets = new ArrayList<>();
 //        targets.add(new Solution.Position(0,2));
-        String data = "20180127";
+        String date = "20180128";
         long time1 = System.currentTimeMillis();
         System.out.println("Reading CityData");
         PositionReader positionReader = new PositionReader("resources\\CityData.csv");
@@ -30,17 +30,17 @@ public class Main {
         for (int i = 1; i <= 5; ++i) {
             System.out.println("Reading predict Data " + i);
 
-            ForecastReader forecastReader = new ForecastReader("resources\\20180128\\" + i + ".csv", 548, 421);
+            ForecastReader forecastReader = new ForecastReader("resources\\" + date + "\\" + i + ".csv", 548, 421);
 
             long time3 = System.currentTimeMillis();
             System.out.println("consumed " + (time3 - time2) / 1000.0 + "s");
-            Solution solution = new Solution(
+            Solution solution = new Solution2(
                     forecastReader,
                     30,
                     positionReader);
 
-            solution.solveProblem2();
-            solution.printResult("resources\\result" + data + "b.csv", positionReader);
+            solution.solveProblem();
+            solution.printResult("resources\\result" + date + "b.csv", positionReader);
 
             long time4 = System.currentTimeMillis();
             System.out.println("consumed " + (time4 - time3) / 1000.0 + "s");
