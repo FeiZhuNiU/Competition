@@ -5,6 +5,7 @@ import eric.competition.Position;
 import eric.competition.PositionReader;
 import javafx.util.Pair;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -12,11 +13,11 @@ import java.util.List;
 /**
  * Created by Eric Yu on 2018/1/30.
  */
-public class Solution1 extends Solution {
+public class Solution4 extends Solution {
 
-    private boolean[][][] dpMatrix;
+    private double[][][] dpMatrix;
 
-    public Solution1(ForecastReader forecastReader, int maxStepEachSlice, PositionReader positionReader) {
+    public Solution4(ForecastReader forecastReader, int maxStepEachSlice, PositionReader positionReader) {
         super(forecastReader, maxStepEachSlice, positionReader);
     }
 
@@ -29,14 +30,16 @@ public class Solution1 extends Solution {
             return;
         }
         preProcess(0);
-        this.dpMatrix = new boolean[maxStepEachSlice * hourNum + 1][rowNum][colNum];
         int maxStep = maxStepEachSlice * hourNum;
-        for (int i = 0; i < rowNum; ++i) {
-            for (int j = 0; j < colNum; ++j) {
-                dpMatrix[0][i][j] = false;
+        this.dpMatrix = new double[maxStep + 1][rowNum][colNum];
+        for (int n = 0; n <= maxStep; ++n) {
+            for (int i = 0; i < rowNum; ++i) {
+                for (int j = 0; j < colNum; ++j) {
+                    dpMatrix[0][i][j] = 1;
+                }
             }
         }
-        dpMatrix[1][startRow][startCol] = true;
+        dpMatrix[1][startRow][startCol] = Math.log10(forecastReader.getForecastScore()[0][startRow][startCol]);
 
         boolean gameOver = true;
         for (int n = 2; n <= maxStep; ++n) {
@@ -44,42 +47,42 @@ public class Solution1 extends Solution {
             for (int i = 0; i < rowNum; ++i) {
                 for (int j = 0; j < colNum; ++j) {
 
-                    if (isBlockedInForecast[(n - 1) / maxStepEachSlice][i][j]) {
-                        dpMatrix[n][i][j] = false;
-                    } else if (dpMatrix[n - 1][i][j]) {
-                        dpMatrix[n][i][j] = true;
-                    } else {
-                        boolean up = (i != 0 && dpMatrix[n - 1][i - 1][j]);
-                        boolean down = (i != rowNum - 1 && dpMatrix[n - 1][i + 1][j]);
-                        boolean right = (j != colNum - 1 && dpMatrix[n - 1][i][j + 1]);
-                        boolean left = (j != 0 && dpMatrix[n - 1][i][j - 1]);
-                        dpMatrix[n][i][j] = up || right || down || left;
+                    if (!isBlockedInForecast[(n - 1) / maxStepEachSlice][i][j]) {
+                        double up = ((i != 0 && dpMatrix[n - 1][i - 1][j] < 0) ? dpMatrix[n - 1][i - 1][j] : 1);
+                        double down = ((i != rowNum - 1 && dpMatrix[n - 1][i + 1][j] < 0) ? dpMatrix[n - 1][i + 1][j] : 1);
+                        double right = ((j != colNum - 1 && dpMatrix[n - 1][i][j + 1] < 0) ? dpMatrix[n - 1][i][j + 1] : 1);
+                        double left = ((j != 0 && dpMatrix[n - 1][i][j - 1] < 0) ? dpMatrix[n - 1][i][j - 1] : 1);
+                        double center = dpMatrix[n - 1][i][j] < 0 ? dpMatrix[n - 1][i][j] : 1;
+                        double maxValue = Collections.max(Arrays.asList(
+                                up > 0 ? Double.NEGATIVE_INFINITY : up,
+                                down > 0 ? Double.NEGATIVE_INFINITY : down,
+                                right > 0 ? Double.NEGATIVE_INFINITY : right,
+                                left > 0 ? Double.NEGATIVE_INFINITY : left,
+                                center > 0 ? Double.NEGATIVE_INFINITY : center));
+                        dpMatrix[n][i][j] = maxValue == Double.NEGATIVE_INFINITY ? 1 : maxValue + Math.log10(forecastReader.getForecastScore()[n][i][j]);
                     }
-
-
                 }
             }
 
             for (int i = 0; i < rowNum; ++i) {
                 for (int j = 0; j < colNum; ++j) {
-                    if (dpMatrix[n][i][j]) {
+                    if (dpMatrix[n][i][j] < 0) {
                         gameOver = false;
                         break;
                     }
                 }
-                if(!gameOver)
+                if (!gameOver)
                     break;
             }
 
-            if(gameOver)
+            if (gameOver)
                 break;
-
-            for (Position position : targets) {
-                if (dpMatrix[n][position.getRow()][position.getCol()] && results.get(position) == null) {
-                    Pair<List<Position>, Integer> curResult = getPath(position.getRow(), position.getCol(), n);
-                    results.put(position, curResult);
-                    System.out.println(positionReader.getEndPositionMap().get(position) + " has found path");
-                }
+        }
+        for (Position position : targets) {
+            if (dpMatrix[n][position.getRow()][position.getCol()] && results.get(position) == null) {
+                Pair<List<Position>, Integer> curResult = getPath(position.getRow(), position.getCol(), n);
+                results.put(position, curResult);
+                System.out.println(positionReader.getEndPositionMap().get(position) + " has found path");
             }
         }
     }

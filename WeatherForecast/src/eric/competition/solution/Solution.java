@@ -22,7 +22,7 @@ public abstract class Solution {
     protected int startRow;
     protected List<Position> targets;
     protected int day;
-    protected boolean hasFlied = false;
+
     protected PositionReader positionReader;
     protected ForecastReader forecastReader;
 
@@ -138,14 +138,6 @@ public abstract class Solution {
 
     public void setForecastReader(ForecastReader forecastReader) {
         this.forecastReader = forecastReader;
-    }
-
-    public boolean isHasFlied() {
-        return hasFlied;
-    }
-
-    public void setHasFlied(boolean hasFlied) {
-        this.hasFlied = hasFlied;
     }
 
     public PositionReader getPositionReader() {
