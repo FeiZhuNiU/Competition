@@ -5,10 +5,7 @@ import eric.competition.Position;
 import eric.competition.PositionReader;
 import javafx.util.Pair;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by Eric Yu on 2018/1/30.
@@ -16,9 +13,11 @@ import java.util.List;
 public class Solution4 extends Solution {
 
     private double[][][] dpMatrix;
+    private double threshold;
 
-    public Solution4(ForecastReader forecastReader, int maxStepEachSlice, PositionReader positionReader) {
+    public Solution4(ForecastReader forecastReader, int maxStepEachSlice, PositionReader positionReader, double threshold) {
         super(forecastReader, maxStepEachSlice, positionReader);
+        this.threshold = threshold;
     }
 
     @Override
@@ -42,6 +41,7 @@ public class Solution4 extends Solution {
         dpMatrix[1][startRow][startCol] = Math.log10(forecastReader.getForecastScore()[0][startRow][startCol]);
 
         boolean gameOver = true;
+
         for (int n = 2; n <= maxStep; ++n) {
 
             for (int i = 0; i < rowNum; ++i) {
@@ -59,7 +59,7 @@ public class Solution4 extends Solution {
                                 right > 0 ? Double.NEGATIVE_INFINITY : right,
                                 left > 0 ? Double.NEGATIVE_INFINITY : left,
                                 center > 0 ? Double.NEGATIVE_INFINITY : center));
-                        dpMatrix[n][i][j] = maxValue == Double.NEGATIVE_INFINITY ? 1 : maxValue + Math.log10(forecastReader.getForecastScore()[n][i][j]);
+                        dpMatrix[n][i][j] = maxValue == Double.NEGATIVE_INFINITY ? 1 : maxValue + Math.log10(forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][i][j]);
                     }
                 }
             }
@@ -78,11 +78,41 @@ public class Solution4 extends Solution {
             if (gameOver)
                 break;
         }
+
         for (Position position : targets) {
-            if (dpMatrix[n][position.getRow()][position.getCol()] && results.get(position) == null) {
-                Pair<List<Position>, Integer> curResult = getPath(position.getRow(), position.getCol(), n);
+            List<Pair<Integer, Double>> availablePaths = new ArrayList<>();
+            for (int n = 1; n <= maxStep; ++n) {
+
+                if (dpMatrix[n][position.getRow()][position.getCol()] < 0) {
+                    availablePaths.add(new Pair<>(n, dpMatrix[n][position.getRow()][position.getCol()] / n));
+                }
+            }
+            int bestN = -1;
+            int bestCandidate = -1;
+            double candidateScore = Double.NEGATIVE_INFINITY;
+            if (availablePaths.size() > 0) {
+
+                for (Pair<Integer, Double> availablePath : availablePaths) {
+                    if (availablePath.getValue() > candidateScore) {
+                        candidateScore = availablePath.getValue();
+                        bestCandidate = availablePath.getKey();
+                    }
+
+                    if (availablePath.getValue() > Math.log10(threshold)) {
+                        bestN = availablePath.getKey();
+                        break;
+                    }
+                }
+            }
+
+            if (bestN != -1 || bestCandidate != -1) {
+                if (bestN == -1) {
+                    bestN = bestCandidate;
+                    System.out.println(positionReader.getEndPositionMap().get(position) + " candidate score: " + Math.pow(10, candidateScore));
+                }
+                Pair<List<Position>, Integer> curResult = getPath(position.getRow(), position.getCol(), bestN);
                 results.put(position, curResult);
-                System.out.println(positionReader.getEndPositionMap().get(position) + " has found path");
+                System.out.println(positionReader.getEndPositionMap().get(position) + " has found path. Steps: " + curResult.getKey().size() );
             }
         }
     }
@@ -97,50 +127,43 @@ public class Solution4 extends Solution {
             int last_row = last.getRow();
             int last_col = last.getCol();
             Position bestPosition = null;
-            if (dpMatrix[n][last_row][last_col]) {
-                path.add(new Position(last_row, last_col));
-            } else {
-                float bestScore = -1;
-                if (last_row > 0 && dpMatrix[n][last_row - 1][last_col]) {
-                    float upScore = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row - 1][last_col];
-                    if (upScore > bestScore) {
-                        bestScore = upScore;
-                        bestPosition = new Position(last_row - 1, last_col);
-                    }
-                }
+            double bestScore = Double.NEGATIVE_INFINITY;
 
-                if (last_row < rowNum - 1 && dpMatrix[n][last_row + 1][last_col]) {
-                    float downScore = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row + 1][last_col];
-                    if (downScore > bestScore) {
-                        bestScore = downScore;
-                        bestPosition = new Position(last_row + 1, last_col);
-                    }
-                }
 
-                if (last_col > 0 && dpMatrix[n][last_row][last_col - 1]) {
-                    float leftScore = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row][last_col - 1];
-                    if (leftScore > bestScore) {
-                        bestScore = leftScore;
-                        bestPosition = new Position(last_row, last_col - 1);
-                    }
-                }
-
-                if (last_row < colNum - 1 && dpMatrix[n][last_row][last_col + 1]) {
-                    float rightScore = forecastReader.getForecastScore()[(n - 1) / maxStepEachSlice][last_row][last_col + 1];
-                    if (rightScore > bestScore) {
-                        bestScore = rightScore;
-                        bestPosition = new Position(last_row, last_col + 1);
-                    }
-                }
-                if (bestPosition != null) {
-                    path.add(bestPosition);
-                } else {
-                    System.out.println("Something wrong during find path");
-                    break;
-                }
+            double up = ((last_row != 0 && dpMatrix[n][last_row - 1][last_col] < 0) ? dpMatrix[n][last_row - 1][last_col] : Double.NEGATIVE_INFINITY);
+            if (up > bestScore) {
+                bestPosition = new Position(last_row - 1, last_col);
             }
-            if (bestPosition != null && bestPosition.getRow() == startRow && bestPosition.getCol() == startCol) {
+            double down = ((last_row != rowNum - 1 && dpMatrix[n][last_row + 1][last_col] < 0) ? dpMatrix[n][last_row + 1][last_col] : Double.NEGATIVE_INFINITY);
+            if (down > bestScore) {
+                bestPosition = new Position(last_row + 1, last_col);
+            }
+            double left = ((last_col != 0 && dpMatrix[n][last_row][last_col - 1] < 0) ? dpMatrix[n][last_row][last_col - 1] : Double.NEGATIVE_INFINITY);
+            if (left > bestScore) {
+                bestPosition = new Position(last_row, last_col - 1);
+            }
+            double right = ((last_col != colNum - 1 && dpMatrix[n][last_row][last_col + 1] < 0) ? dpMatrix[n][last_row][last_col + 1] : Double.NEGATIVE_INFINITY);
+            if (right > bestScore) {
+                bestPosition = new Position(last_row, last_col + 1);
+            }
+
+            double center = dpMatrix[n][last_row][last_col] < 0 ? dpMatrix[n][last_row][last_col] : Double.NEGATIVE_INFINITY;
+            if (center > bestScore) {
+                bestPosition = new Position(last_row, last_col);
+            }
+
+            if (bestPosition != null) {
+                path.add(bestPosition);
+            } else {
+                System.out.println("Something wrong during find path");
+                break;
+            }
+
+            if (bestPosition.getRow() == startRow && bestPosition.getCol() == startCol) {
                 firstN = n;
+                if (firstN != 1) {
+                    System.out.println("warning: firstN is not 1!!");
+                }
                 break;
             }
 

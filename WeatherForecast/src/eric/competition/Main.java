@@ -34,10 +34,10 @@ public class Main {
 
             long time3 = System.currentTimeMillis();
             System.out.println("consumed " + (time3 - time2) / 1000.0 + "s");
-            Solution solution = new Solution2(
+            Solution solution = new Solution4(
                     forecastReader,
                     30,
-                    positionReader);
+                    positionReader,0.8);
 
             solution.solveProblem();
             solution.printResult("resources\\result" + date + "b.csv", positionReader);
