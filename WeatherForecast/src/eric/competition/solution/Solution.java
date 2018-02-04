@@ -46,7 +46,7 @@ public abstract class Solution {
         this.colNum = isBlockedInForecast[0][0].length;
         this.maxStepEachSlice = maxStepEachSlice;
         this.day = forecastReader.getDay();
-        this.targets = new ArrayList<>(positionReader.getEndPositionMap().keySet());
+        this.targets = new ArrayList<>(positionReader.getEndPositionToIndexMap().keySet());
         this.results = new HashMap<>();
         this.positionReader = positionReader;
         this.forecastReader = forecastReader;
@@ -192,7 +192,7 @@ public abstract class Solution {
                 for (int i = 0; i < entry.getValue().getKey().size(); ++i) {
                     writer.write(ResultUtils.toCSVLine(
                             day,
-                            positionReader.getEndPositionMap().get(entry.getKey()),
+                            positionReader.getEndPositionToIndexMap().get(entry.getKey()),
                             i + startTimeN,
                             entry.getValue().getKey().get(i)));
                     writer.newLine();

@@ -78,7 +78,7 @@ public class Solution1 extends Solution {
                 if (dpMatrix[n][position.getRow()][position.getCol()] && results.get(position) == null) {
                     Pair<List<Position>, Integer> curResult = getPath(position.getRow(), position.getCol(), n);
                     results.put(position, curResult);
-                    System.out.println(positionReader.getEndPositionMap().get(position) + " has found path");
+                    System.out.println(positionReader.getEndPositionToIndexMap().get(position) + " has found path");
                 }
             }
         }

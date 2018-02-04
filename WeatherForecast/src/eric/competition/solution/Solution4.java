@@ -108,11 +108,11 @@ public class Solution4 extends Solution {
             if (bestN != -1 || bestCandidate != -1) {
                 if (bestN == -1) {
                     bestN = bestCandidate;
-                    System.out.println(positionReader.getEndPositionMap().get(position) + " candidate score: " + Math.pow(10, candidateScore));
+                    System.out.println(positionReader.getEndPositionToIndexMap().get(position) + " candidate score: " + Math.pow(10, candidateScore));
                 }
                 Pair<List<Position>, Integer> curResult = getPath(position.getRow(), position.getCol(), bestN);
                 results.put(position, curResult);
-                System.out.println(positionReader.getEndPositionMap().get(position) + " has found path. Steps: " + curResult.getKey().size() );
+                System.out.println(positionReader.getEndPositionToIndexMap().get(position) + " has found path. Steps: " + curResult.getKey().size() );
             }
         }
     }

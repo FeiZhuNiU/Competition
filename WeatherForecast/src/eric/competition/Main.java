@@ -20,7 +20,7 @@ public class Main {
 //        };
 //        List<Solution.Position> targets = new ArrayList<>();
 //        targets.add(new Solution.Position(0,2));
-        String date = "20180128";
+        String date = "20180205";
         long time1 = System.currentTimeMillis();
         System.out.println("Reading CityData");
         PositionReader positionReader = new PositionReader("resources\\CityData.csv");
@@ -34,10 +34,10 @@ public class Main {
 
             long time3 = System.currentTimeMillis();
             System.out.println("consumed " + (time3 - time2) / 1000.0 + "s");
-            Solution solution = new Solution4(
+            Solution solution = new Solution5(
                     forecastReader,
                     30,
-                    positionReader,0.8);
+                    positionReader);
 
             solution.solveProblem();
             solution.printResult("resources\\result" + date + "b.csv", positionReader);

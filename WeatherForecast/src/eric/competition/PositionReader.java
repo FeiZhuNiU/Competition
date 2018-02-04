@@ -10,10 +10,12 @@ import java.util.Map;
 
 public class PositionReader {
     private Position startPosition;
-    private Map<Position, Integer> endPositionMap;
+    private Map<Position, Integer> endPositionToIndexMap;
+    private Map<Integer, Position> indexToEndPositionMap;
 
     public PositionReader(String fileName) {
-        endPositionMap = new HashMap<>();
+        endPositionToIndexMap = new HashMap<>();
+        indexToEndPositionMap = new HashMap<>();
         try {
             BufferedReader file = new BufferedReader(new FileReader(new File(fileName)));
             String line;
@@ -25,7 +27,8 @@ public class PositionReader {
 
             while ((line = file.readLine()) != null) {
                 Pair<Position, Integer> positionIntegerPair = Position.fromCSVLine(line);
-                endPositionMap.put(positionIntegerPair.getKey(), positionIntegerPair.getValue());
+                endPositionToIndexMap.put(positionIntegerPair.getKey(), positionIntegerPair.getValue());
+                indexToEndPositionMap.put(positionIntegerPair.getValue(), positionIntegerPair.getKey());
             }
 
             file.close();
@@ -42,11 +45,19 @@ public class PositionReader {
         this.startPosition = startPosition;
     }
 
-    public Map<Position, Integer> getEndPositionMap() {
-        return endPositionMap;
+    public Map<Integer, Position> getIndexToEndPositionMap() {
+        return indexToEndPositionMap;
     }
 
-    public void setEndPositionMap(Map<Position, Integer> endPositionMap) {
-        this.endPositionMap = endPositionMap;
+    public void setIndexToEndPositionMap(Map<Integer, Position> indexToEndPositionMap) {
+        this.indexToEndPositionMap = indexToEndPositionMap;
+    }
+
+    public Map<Position, Integer> getEndPositionToIndexMap() {
+        return endPositionToIndexMap;
+    }
+
+    public void setEndPositionToIndexMap(Map<Position, Integer> endPositionToIndexMap) {
+        this.endPositionToIndexMap = endPositionToIndexMap;
     }
 }

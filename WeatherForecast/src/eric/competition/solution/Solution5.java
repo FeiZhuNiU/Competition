@@ -5,19 +5,17 @@ import eric.competition.Position;
 import eric.competition.PositionReader;
 import javafx.util.Pair;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by Eric Yu on 2018/1/30.
  */
-public class Solution2 extends Solution {
+public class Solution5 extends Solution {
 
-    public Solution2(ForecastReader forecastReader, int maxStepEachSlice, PositionReader positionReader) {
+    public Solution5(ForecastReader forecastReader, int maxStepEachSlice, PositionReader positionReader) {
         super(forecastReader, maxStepEachSlice, positionReader);
     }
+
     private int[][][] dpMatrix2;
 
     @Override
@@ -28,7 +26,7 @@ public class Solution2 extends Solution {
                 || startRow > rowNum) {
             return;
         }
-        preProcess(0);
+        preProcess(1);
         this.dpMatrix2 = new int[maxStepEachSlice * hourNum + 1][rowNum][colNum];
         int maxStep = maxStepEachSlice * hourNum;
         for (int n = 0; n <= maxStep; ++n) {
@@ -38,6 +36,9 @@ public class Solution2 extends Solution {
                 }
             }
         }
+
+        // <TargetPosition,    <startN, endN>>
+        LinkedHashMap<Position, TreeMap<Integer, Integer>> allPossiblePathStartEndN = new LinkedHashMap<>();
 
         for (int n = 1; n <= maxStep; ++n) {
             for (int i = 0; i < rowNum; ++i) {
@@ -58,27 +59,82 @@ public class Solution2 extends Solution {
                     }
                 }
             }
-        }
 
+            for (Position position : targets) {
+                int curSteps = dpMatrix2[n][position.getRow()][position.getCol()];
+                if (curSteps != Integer.MAX_VALUE) {
+                    int firstN = n - curSteps + 1;
 
-        for (Position position : targets) {
-            int minStep = Integer.MAX_VALUE;
-            int lastN = Integer.MAX_VALUE;
-            for (int timePoint = maxStep; timePoint > 0; --timePoint) {
-                int stepUsed = dpMatrix2[timePoint][position.getRow()][position.getCol()];
-                if (stepUsed != Integer.MAX_VALUE) {
-                    minStep = Math.min(minStep, stepUsed);
-                    if (minStep == stepUsed) {
-                        lastN = timePoint;
+                    if (!allPossiblePathStartEndN.containsKey(position)) {
+                        allPossiblePathStartEndN.put(position, new TreeMap<>());
+                    }
+                    //TODO to find optimal path
+                    if (!allPossiblePathStartEndN.get(position).containsKey(firstN)) {
+                        allPossiblePathStartEndN.get(position).put(firstN, n);
                     }
                 }
-            }
-            if (minStep != Integer.MAX_VALUE && lastN != Integer.MAX_VALUE) {
-                System.out.println(positionReader.getEndPositionToIndexMap().get(position) + " has found path");
-                Pair<List<Position>, Integer> pathResult = getPath2(position.getRow(), position.getCol(), lastN, minStep);
-                results.put(position, pathResult);
+//                int minStep = Integer.MAX_VALUE;
+//                int lastN = Integer.MAX_VALUE;
+//                for (int timePoint = maxStep; timePoint > 0; --timePoint) {
+//                    int stepUsed = dpMatrix2[timePoint][position.getRow()][position.getCol()];
+//                    if (stepUsed != Integer.MAX_VALUE) {
+//                        minStep = Math.min(minStep, stepUsed);
+//                        if (minStep == stepUsed) {
+//                            lastN = timePoint;
+//                        }
+//                    }
+//                }
+//                if (minStep != Integer.MAX_VALUE && lastN != Integer.MAX_VALUE) {
+//                    System.out.println(positionReader.getEndPositionToIndexMap().get(position) + " has found path");
+//                    Pair<List<Position>, Integer> pathResult = getPath2(position.getRow(), position.getCol(), lastN, minStep);
+//                    results.put(position, pathResult);
+//                }
             }
         }
+        // targetPosition, lastN
+        Map<Position, Integer> pathInfos = choosePath(allPossiblePathStartEndN, 5);
+        for (Map.Entry<Position, Integer> pathInfo : pathInfos.entrySet()) {
+
+            Position target = pathInfo.getKey();
+            Pair<List<Position>, Integer> path = getPath2(
+                    target.getRow(),
+                    target.getCol(),
+                    pathInfo.getValue(),
+                    dpMatrix2[pathInfo.getValue()][target.getRow()][target.getCol()]);
+            results.put(target, path);
+            System.out.println(positionReader.getEndPositionToIndexMap().get(target) + " has found path. " +
+                    "StartN: " + (pathInfo.getValue() + 1 - dpMatrix2[pathInfo.getValue()][target.getRow()][target.getCol()]) +
+                    " EndN: " + pathInfo.getValue() + " Steps: " + dpMatrix2[pathInfo.getValue()][target.getRow()][target.getCol()]);
+        }
+    }
+    // position, lastN
+    private Map<Position, Integer> choosePath(LinkedHashMap<Position, TreeMap<Integer, Integer>> allPossiblePathStartEndN, int minPrepareTime) {
+
+        //TODO reorder allPossiblePathStartEndN
+        // <firstFirstN, firstNLength>
+        TreeMap<PossiblePathInfo, Position> reorderedInfo = new TreeMap<>();
+        allPossiblePathStartEndN.forEach((k,v)->{
+            reorderedInfo.put(new PossiblePathInfo(v.firstKey(), v.lastKey() - v.firstKey()), k);
+        });
+
+        LinkedHashMap<Position, TreeMap<Integer, Integer>> reorderedMap = new LinkedHashMap<>();
+        for(Map.Entry<PossiblePathInfo, Position> tmp : reorderedInfo.entrySet()){
+            reorderedMap.put(tmp.getValue(), allPossiblePathStartEndN.get(tmp.getValue()));
+        }
+
+
+        Map<Position, Integer> ret = new HashMap<>();
+        int lastStartN = Integer.MIN_VALUE;
+        for (Map.Entry<Position, TreeMap<Integer, Integer>> possiblePath_for_oneTarget : reorderedMap.entrySet()) {
+            for (Map.Entry<Integer, Integer> solution : possiblePath_for_oneTarget.getValue().entrySet()) {
+                if (solution.getKey() >= lastStartN + minPrepareTime) {
+                    lastStartN = solution.getKey();
+                    ret.put(possiblePath_for_oneTarget.getKey(), solution.getValue());
+                    break;
+                }
+            }
+        }
+        return ret;
     }
 
     private Pair<List<Position>, Integer> getPath2(int targetRow, int targetCol, int lastN, int steps) {
@@ -133,5 +189,22 @@ public class Solution2 extends Solution {
             System.out.println("Something wrong when find path");
         }
         return new Pair<>(path, lastN - steps + 1);
+    }
+
+    class PossiblePathInfo implements Comparable<PossiblePathInfo>{
+        int firstFirstN;
+        int firstNLength;
+
+        public PossiblePathInfo(int firstFirstN, int firstNLength) {
+            this.firstFirstN = firstFirstN;
+            this.firstNLength = firstNLength;
+        }
+
+        @Override
+        public int compareTo(PossiblePathInfo o) {
+            if (this.firstFirstN == o.firstFirstN)
+                return this.firstNLength - o.firstNLength;
+            return this.firstFirstN - o.firstFirstN;
+        }
     }
 }
