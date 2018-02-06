@@ -20,21 +20,21 @@ public class Main {
 //        };
 //        List<Solution.Position> targets = new ArrayList<>();
 //        targets.add(new Solution.Position(0,2));
-        String date = "20180205";
+        String date = "20180206";
         long time1 = System.currentTimeMillis();
         System.out.println("Reading CityData");
         PositionReader positionReader = new PositionReader("resources\\CityData.csv");
         long time2 = System.currentTimeMillis();
         System.out.println("consumed " + (time2 - time1) / 1000.0 + "s");
 
-        for (int i = 1; i <= 5; ++i) {
+        for (int i = 1; i <= 1; ++i) {
             System.out.println("Reading predict Data " + i);
 
             ForecastReader forecastReader = new ForecastReader("resources\\" + date + "\\" + i + ".csv", 548, 421);
 
             long time3 = System.currentTimeMillis();
             System.out.println("consumed " + (time3 - time2) / 1000.0 + "s");
-            Solution solution = new Solution5(
+            Solution solution = new Solution6(
                     forecastReader,
                     30,
                     positionReader);
