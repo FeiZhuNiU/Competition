@@ -27,7 +27,7 @@ public class Main {
         long time2 = System.currentTimeMillis();
         System.out.println("consumed " + (time2 - time1) / 1000.0 + "s");
 
-        for (int i = 1; i <= 1; ++i) {
+        for (int i = 1; i <= 5; ++i) {
             System.out.println("Reading predict Data " + i);
 
             ForecastReader forecastReader = new ForecastReader("resources\\" + date + "\\" + i + ".csv", 548, 421);

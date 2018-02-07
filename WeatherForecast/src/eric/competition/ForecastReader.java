@@ -39,7 +39,7 @@ public class ForecastReader {
             line = file.readLine();
             while ((line = file.readLine()) != null) {
                 SingleLineData lineData = new SingleLineData(line);
-                forecast[lineData.getHour() - 3][lineData.getX() - 1][lineData.getY() - 1] = lineData.isBlocked();
+                forecast[lineData.getHour() - 3][lineData.getX() - 1][lineData.getY() - 1] = (lineData.isBlocked() || lineData.getScore() < 0.65);
                 forecastScore[lineData.getHour() - 3][lineData.getX() - 1][lineData.getY() - 1] = lineData.getScore();
                 this.day = lineData.getDay();
             }
